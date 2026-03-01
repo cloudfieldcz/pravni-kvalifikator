@@ -1,0 +1,226 @@
+/* Právní Kvalifikátor — web UI styles */
+
+:root {
+    --bg: #fafafa;
+    --surface: #ffffff;
+    --text: #1a1a1a;
+    --text-secondary: #666;
+    --border: #e0e0e0;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --success: #16a34a;
+    --error: #dc2626;
+    --warning: #ca8a04;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 1rem;
+}
+
+header { margin-bottom: 1rem; }
+header h1 a { color: var(--text); text-decoration: none; }
+.header-row { display: flex; justify-content: space-between; align-items: flex-start; }
+.subtitle { color: var(--text-secondary); font-size: 0.9rem; }
+.auth-info { display: flex; align-items: center; gap: 0.75rem; padding-top: 0.5rem; }
+.auth-user { color: var(--text-secondary); font-size: 0.9rem; }
+
+main { min-height: 60vh; }
+
+/* Form */
+.qualify-form { margin-bottom: 2rem; }
+textarea {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: inherit;
+    resize: vertical;
+    margin-bottom: 0.75rem;
+}
+textarea:focus { outline: 2px solid var(--primary); border-color: var(--primary); }
+
+.form-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 1rem; flex-wrap: wrap; }
+.typ-select label { margin-right: 1rem; cursor: pointer; }
+.help-text { display: block; color: var(--text-secondary); font-size: 0.8rem; margin-top: 0.25rem; }
+
+button {
+    background: var(--primary);
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    font-size: 1rem;
+    cursor: pointer;
+    white-space: nowrap;
+}
+button:hover { background: var(--primary-hover); }
+button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+/* Progress */
+.hidden { display: none; }
+
+.agent-progress {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    border-left: 3px solid var(--border);
+    margin-bottom: 0.25rem;
+}
+.agent-progress.status-started { border-left-color: var(--primary); }
+.agent-progress.status-working { border-left-color: var(--primary); }
+.agent-progress.status-completed { border-left-color: var(--success); }
+.agent-progress.status-error { border-left-color: var(--error); }
+
+.agent-icon { font-size: 1.1rem; width: 1.5rem; text-align: center; }
+.agent-name { font-weight: 600; min-width: 10rem; }
+.agent-message { color: var(--text-secondary); }
+
+/* Results */
+.kvalifikace-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+.kvalifikace-table th, .kvalifikace-table td {
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+.kvalifikace-table th { background: var(--bg); font-weight: 600; }
+.paragraf { font-weight: 600; }
+.confidence { font-weight: 600; }
+
+.review-notes { padding-left: 1.5rem; margin: 0.5rem 0; }
+.review-notes li { margin-bottom: 0.25rem; }
+
+.error-box {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 6px;
+    padding: 1rem;
+    color: var(--error);
+}
+
+.popis-skutku {
+    background: var(--surface);
+    border-left: 3px solid var(--primary);
+    padding: 0.6rem 0.75rem;
+    margin: 0.75rem 0;
+    font-style: italic;
+}
+
+/* History */
+.history { margin-top: 2rem; }
+.history-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin-bottom: 0.5rem;
+}
+.history-meta { display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.25rem; }
+.history-text { color: var(--text-secondary); font-size: 0.9rem; }
+
+.badge {
+    display: inline-block;
+    padding: 0.1rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+.badge-TC { background: #dbeafe; color: #1e40af; }
+.badge-PR { background: #fef3c7; color: #92400e; }
+
+.stav { font-size: 0.8rem; }
+.stav-pending { color: var(--text-secondary); }
+.stav-processing { color: var(--primary); }
+.stav-completed { color: var(--success); }
+.stav-error { color: var(--error); }
+
+.btn-link {
+    color: var(--primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+}
+.btn-link:hover { text-decoration: underline; }
+
+/* Alert box */
+.alert {
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    margin: 1rem 0;
+    font-size: 0.9rem;
+}
+.alert-warning {
+    background: #fefce8;
+    border: 1px solid #fde68a;
+    color: #854d0e;
+}
+
+/* Okolnosti table */
+.okolnosti-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+}
+.okolnosti-table th, .okolnosti-table td {
+    padding: 0.35rem 0.5rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+.okolnosti-table th { background: var(--bg); font-weight: 600; }
+.okolnosti-table small { color: var(--text-secondary); }
+.aplikovatelnost { font-weight: 600; }
+.aplikovatelnost-ano { color: var(--success); }
+.aplikovatelnost-ne { color: var(--text-secondary); }
+.okolnost-disputed { background: #fefce8; }
+
+/* Per-kvalifikace okolnost note */
+.sub-row.okolnost-poznamka td {
+    padding: 0.25rem 0.75rem 0.5rem 1.5rem;
+    font-size: 0.85rem;
+    color: var(--warning);
+    border-bottom: 1px solid var(--border);
+}
+.okolnost-icon { margin-right: 0.25rem; }
+
+/* Okolnosti lists */
+.okolnosti-list { padding-left: 1.5rem; margin: 0.5rem 0; }
+.okolnosti-list li { margin-bottom: 0.25rem; }
+.okolnosti-list.polehcujici li strong { color: var(--success); }
+.okolnosti-list.pritezujici li strong { color: var(--error); }
+
+/* Login */
+.login-container { max-width: 400px; margin: 2rem auto; }
+.login-container h2 { margin-bottom: 1rem; }
+.login-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.login-form label { font-weight: 600; }
+.login-form input[type="text"] {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 1rem;
+    font-family: monospace;
+}
+.login-form input[type="text"]:focus {
+    outline: 2px solid var(--primary);
+    border-color: var(--primary);
+}
+
+footer {
+    margin-top: 1.5rem;
+    padding: 0.75rem 0;
+    border-top: 1px solid var(--border);
+}
+.disclaimer { color: var(--text-secondary); font-size: 0.8rem; text-align: center; }

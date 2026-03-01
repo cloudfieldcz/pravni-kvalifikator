@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+
+{% block title %}Přihlášení — Právní Kvalifikátor{% endblock %}
+
+{% block content %}
+<div class="login-container">
+    <h2>Přihlášení</h2>
+
+    {% if error %}
+    <div class="error-box">{{ error }}</div>
+    {% endif %}
+
+    <form method="post" action="/login" class="login-form">
+        <label for="token">Autentizační token</label>
+        <input type="text" id="token" name="token" required
+               placeholder="USERNAME:YYYYMMDD:TOKEN" autocomplete="off">
+        <button type="submit">Přihlásit se</button>
+    </form>
+</div>
+{% endblock %}

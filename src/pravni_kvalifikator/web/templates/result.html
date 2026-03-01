@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+
+{% block title %}Výsledek — Právní Kvalifikátor{% endblock %}
+
+{% block content %}
+<section class="result">
+    <h2>Výsledek kvalifikace</h2>
+
+    <div class="result-header">
+        <span class="badge badge-{{ qualification.typ }}">{{ qualification.typ }}</span>
+        <span class="stav stav-{{ qualification.stav }}">{{ qualification.stav }}</span>
+    </div>
+
+    <blockquote class="popis-skutku">
+        {{ qualification.popis_skutku }}
+    </blockquote>
+
+    {% if qualification.vysledek %}
+        {% set vysledek = qualification.vysledek %}
+
+        {# Alert box — okolnosti vylučující protiprávnost #}
+        {% if 'vylucujici_okolnosti' in vysledek.okolnosti %}
+            {% set active_vylucujici = [] %}
+            {% for vo in vysledek.okolnosti.vylucujici_okolnosti %}
+                {% if vo.aplikovatelnost in ['ano', 'možná'] %}
+                    {% if active_vylucujici.append(vo) %}{% endif %}
+                {% endif %}
+            {% endfor %}
+            {% if active_vylucujici %}
+            <div class="alert alert-warning">
+                <strong>Pozor:</strong> Byly identifikovány okolnosti vylučující protiprávnost.
+                Kvalifikace níže může být podmíněná.
+            </div>
+            {% endif %}
+        {% endif %}
+
+        {% if vysledek.final_kvalifikace %}
+        <h3>Kvalifikace</h3>
+        <table class="kvalifikace-table">
+            <thead>
+                <tr>
+                    <th>Paragraf</th>
+                    <th>Název</th>
+                    <th>Confidence</th>
+                    <th>Odůvodnění</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kv in vysledek.final_kvalifikace %}
+                <tr>
+                    <td class="paragraf">{{ kv.paragraf }}</td>
+                    <td>{{ kv.nazev }}</td>
+                    <td class="confidence">{{ (kv.confidence * 100)|round|int }}%</td>
+                    <td>{{ kv.duvod_jistoty }}</td>
+                </tr>
+                {% if kv.vylucujici_okolnost_poznamka %}
+                <tr class="sub-row okolnost-poznamka">
+                    <td colspan="4">
+                        <span class="okolnost-icon">⚖</span>
+                        {{ kv.vylucujici_okolnost_poznamka }}
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if vysledek.review_notes %}
+        <h3>Poznámky reviewera</h3>
+        <ul class="review-notes">
+            {% for note in vysledek.review_notes %}
+            <li>{{ note }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
+        {# Okolnosti section #}
+        {% if vysledek.okolnosti %}
+            {% if 'vylucujici_okolnosti' in vysledek.okolnosti %}
+                {# New format — structured okolnosti #}
+                {% if vysledek.okolnosti.vylucujici_okolnosti %}
+                <h3>Okolnosti vylučující protiprávnost</h3>
+                <table class="okolnosti-table">
+                    <thead>
+                        <tr>
+                            <th>Paragraf</th>
+                            <th>Název</th>
+                            <th>Aplikovatelnost</th>
+                            <th>Confidence</th>
+                            <th>Zdůvodnění</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vo in vysledek.okolnosti.vylucujici_okolnosti %}
+                        <tr class="okolnost-{{ vo.aplikovatelnost|replace(' ', '-')|replace('í', 'i') }}
+                            {%- set disputed = [] -%}
+                            {%- for note in vysledek.review_notes -%}
+                                {%- if vo.paragraf in note -%}
+                                    {%- if disputed.append(true) -%}{%- endif -%}
+                                {%- endif -%}
+                            {%- endfor -%}
+                            {%- if disputed %} okolnost-disputed{% endif %}">
+                            <td>{{ vo.paragraf }}</td>
+                            <td>{{ vo.nazev }}</td>
+                            <td class="aplikovatelnost aplikovatelnost-{{ vo.aplikovatelnost }}">
+                                {{ vo.aplikovatelnost }}
+                            </td>
+                            <td class="confidence">{{ (vo.confidence * 100)|round|int }}%</td>
+                            <td>{{ vo.duvod }}
+                                {% if vo.vztahuje_se_na %}
+                                <br><small>Vztahuje se na: {{ vo.vztahuje_se_na|join(', ') }}</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% endif %}
+
+                {% if vysledek.okolnosti.polehcujici %}
+                <h3>Polehčující okolnosti</h3>
+                <ul class="okolnosti-list polehcujici">
+                    {% for p in vysledek.okolnosti.polehcujici %}
+                    <li><strong>{{ p.paragraf_pismeno }}</strong>: {{ p.popis }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+                {% if vysledek.okolnosti.pritezujici %}
+                <h3>Přitěžující okolnosti</h3>
+                <ul class="okolnosti-list pritezujici">
+                    {% for p in vysledek.okolnosti.pritezujici %}
+                    <li><strong>{{ p.paragraf_pismeno }}</strong>: {{ p.popis }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+
+            {% elif 'organizovana_skupina' in vysledek.okolnosti %}
+                {# Old format — simple boolean flags #}
+                {% set active_old = [] %}
+                {% if vysledek.okolnosti.organizovana_skupina %}
+                    {% if active_old.append('Organizovaná skupina') %}{% endif %}
+                {% endif %}
+                {% if vysledek.okolnosti.recidiva %}
+                    {% if active_old.append('Recidiva') %}{% endif %}
+                {% endif %}
+                {% if vysledek.okolnosti.priprava_trestna %}
+                    {% if active_old.append('Příprava trestná') %}{% endif %}
+                {% endif %}
+                {% if active_old %}
+                <h3>Okolnosti</h3>
+                <ul class="okolnosti-list">
+                    {% for o in active_old %}
+                    <li>{{ o }}</li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            {% endif %}
+        {% endif %}
+
+    {% elif qualification.error_message %}
+        <div class="error-box">
+            <strong>Chyba:</strong> {{ qualification.error_message }}
+        </div>
+    {% else %}
+        <p>Kvalifikace probíhá...</p>
+    {% endif %}
+</section>
+
+<a href="/" class="btn-link">Zpět na hlavní stránku</a>
+{% endblock %}

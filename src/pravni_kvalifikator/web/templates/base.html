@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Právní Kvalifikátor{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css?v={{ static_v }}">
+</head>
+<body>
+    <header>
+        <div class="header-row">
+            <div>
+                <h1><a href="/">Právní Kvalifikátor</a></h1>
+                <p class="subtitle">Systém LLM agentů pro právní kvalifikaci skutků</p>
+            </div>
+            {% if request.state.username is defined and request.state.username %}
+            <div class="auth-info">
+                <span class="auth-user">{{ request.state.username }}</span>
+                <a href="/logout" class="btn-link">Odhlásit</a>
+            </div>
+            {% endif %}
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p class="disclaimer">
+            Score je indikativní, nenahrazuje právní posouzení.
+        </p>
+    </footer>
+
+    <script src="/static/app.js?v={{ static_v }}"></script>
+</body>
+</html>
