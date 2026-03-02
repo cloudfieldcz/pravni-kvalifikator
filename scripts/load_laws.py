@@ -23,11 +23,24 @@ async def main():
     logger.info("Starting law indexing: %d laws", len(LAW_REGISTRY))
     stats = await indexer.index_all(LAW_REGISTRY)
 
+    # Delete laws no longer in registry (with all chapters, paragraphs, embeddings)
+    registry_cisla = {law["sbirkove_cislo"] for law in LAW_REGISTRY}
+    for db_law in db.list_laws():
+        if db_law["sbirkove_cislo"] not in registry_cisla:
+            logger.warning(
+                "Removing %s (%s) — no longer in registry",
+                db_law["sbirkove_cislo"],
+                db_law["nazev"],
+            )
+            db.delete_law_cascade(db_law["id"])
+            stats["removed"] = stats.get("removed", 0) + 1
+
     logger.info(
-        "Indexing complete: %d laws, %d chapters, %d paragraphs, %d errors",
+        "Indexing complete: %d laws, %d chapters, %d paragraphs, %d removed, %d errors",
         stats["laws"],
         stats["chapters"],
         stats["paragraphs"],
+        stats.get("removed", 0),
         len(stats["errors"]),
     )
 

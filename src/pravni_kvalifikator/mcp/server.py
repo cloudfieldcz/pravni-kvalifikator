@@ -21,7 +21,7 @@ def _get_transport_security() -> TransportSecuritySettings:
     In Docker, the web container connects via hostname 'mcp:8001' which fails
     the default DNS rebinding protection. Allow it explicitly.
     """
-    allowed_hosts = ["localhost", "127.0.0.1"]
+    allowed_hosts = ["localhost", "localhost:*", "127.0.0.1", "127.0.0.1:*"]
     # MCP_ALLOWED_HOSTS can add extra hosts (e.g. Docker service names)
     extra = os.environ.get("MCP_ALLOWED_HOSTS", "")
     if extra:

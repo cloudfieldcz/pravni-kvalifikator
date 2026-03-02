@@ -11,6 +11,7 @@ from pravni_kvalifikator.agents.law_identifier import law_identifier_node
 from pravni_kvalifikator.agents.paragraph_selector import paragraph_selector_node
 from pravni_kvalifikator.agents.qualifier import qualifier_node
 from pravni_kvalifikator.agents.reviewer import reviewer_node
+from pravni_kvalifikator.agents.special_law_checker import special_law_checker_node
 from pravni_kvalifikator.agents.state import QualificationState
 
 logger = logging.getLogger(__name__)
@@ -61,11 +62,15 @@ def create_workflow() -> Any:
     async def safe_reviewer(state):
         return await _safe_node(state, reviewer_node, "reviewer")
 
+    async def safe_special_law(state):
+        return await _safe_node(state, special_law_checker_node, "special_law_checker")
+
     workflow.add_node("law_identifier", safe_law_id)
     workflow.add_node("head_classifier", safe_head_cls)
     workflow.add_node("paragraph_selector", safe_para_sel)
     workflow.add_node("qualifier", safe_qualifier)
     workflow.add_node("reviewer", safe_reviewer)
+    workflow.add_node("special_law_checker", safe_special_law)
 
     # Routing
     workflow.add_conditional_edges(
@@ -86,6 +91,11 @@ def create_workflow() -> Any:
     )
     workflow.add_conditional_edges(
         "qualifier",
+        _check_error,
+        {"continue": "special_law_checker", "end": END},
+    )
+    workflow.add_conditional_edges(
+        "special_law_checker",
         _check_error,
         {"continue": "reviewer", "end": END},
     )

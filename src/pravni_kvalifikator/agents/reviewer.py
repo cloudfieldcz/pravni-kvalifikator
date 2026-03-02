@@ -1,4 +1,4 @@
-"""Agent 4 — Reviewer: cross-checks qualification for consistency and completeness."""
+"""Agent 5 — Reviewer: cross-checks qualification for consistency and completeness."""
 
 import json
 import logging
@@ -41,12 +41,17 @@ Zkontroluj následující aspekty:
    - Může být skutek kvalifikován opačně? (např. drobná krádež pod 10 000 Kč
      může být přestupek, ne TČ)
 
-5. REVIEW NOTES:
+5. SPECIÁLNÍ ZÁKONY:
+   - Zkontroluj kvalifikace ze speciálních zákonů (pokud jsou)
+   - Ověř, že jsou konzistentní s hlavní TZ kvalifikací
+   - Upozorni na případné duplikáty nebo protimluvy
+
+6. REVIEW NOTES:
    - Přidej poznámky ke každé úpravě
    - Uveď důvod změny confidence score
    - Zaznamenej chybějící informace důležité pro kvalifikaci
 
-6. OKOLNOSTI VYLUČUJÍCÍ PROTIPRÁVNOST:
+7. OKOLNOSTI VYLUČUJÍCÍ PROTIPRÁVNOST:
    Zkontroluj, zda identifikované okolnosti vylučující protiprávnost odpovídají
    popisu skutku. Pravidla pro úpravu confidence:
    - Pokud vylučující okolnost má aplikovatelnost="ano" a confidence >= 0.7:
@@ -92,7 +97,7 @@ class ReviewerOutput(BaseModel):
 
 
 async def reviewer_node(state: QualificationState) -> dict[str, Any]:
-    """Agent 4: Review and cross-check qualification."""
+    """Agent 5: Review and cross-check qualification."""
     qid = state.get("qualification_id", 0)
     await log_agent_activity(qid, "reviewer", "started", "Provádím revizi kvalifikace")
 
@@ -101,6 +106,8 @@ async def reviewer_node(state: QualificationState) -> dict[str, Any]:
     skoda = state.get("skoda", {})
     okolnosti = state.get("okolnosti", {})
     candidate_paragraphs = state.get("candidate_paragraphs", [])
+    special_law_kvalifikace = state.get("special_law_kvalifikace", [])
+    special_law_notes = state.get("special_law_notes", [])
 
     llm = get_llm(max_tokens=8192)
 
@@ -113,6 +120,17 @@ async def reviewer_node(state: QualificationState) -> dict[str, Any]:
         f"Všechny kandidátní paragrafy (pro kontrolu souběhu):\n"
         f"{json.dumps(candidate_paragraphs, ensure_ascii=False, indent=2)}",
     ]
+
+    if special_law_kvalifikace:
+        user_parts.append(
+            "Kvalifikace ze speciálních zákonů:\n"
+            f"{json.dumps(special_law_kvalifikace, ensure_ascii=False, indent=2)}"
+        )
+    if special_law_notes:
+        user_parts.append(
+            "Poznámky ke speciálním zákonům:\n"
+            f"{json.dumps(special_law_notes, ensure_ascii=False, indent=2)}"
+        )
 
     # Pokud existují vylučující okolnosti, explicitně upozorni reviewera
     vylucujici = okolnosti.get("vylucujici_okolnosti", [])

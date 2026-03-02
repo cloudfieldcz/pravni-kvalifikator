@@ -8,6 +8,14 @@ import pytest
 from pravni_kvalifikator.agents.state import QualificationState
 
 
+class TestState:
+    def test_state_has_special_law_keys(self):
+        """QualificationState should have special_law_kvalifikace and special_law_notes."""
+        hints = QualificationState.__annotations__
+        assert "special_law_kvalifikace" in hints
+        assert "special_law_notes" in hints
+
+
 class TestLawIdentifier:
     @pytest.mark.asyncio
     async def test_identifies_relevant_laws(self):
@@ -975,6 +983,164 @@ class TestReviewer:
         assert len(result["review_notes"]) > 0
 
 
+class TestSpecialLawChecker:
+    @pytest.mark.asyncio
+    async def test_identifies_weapon_law(self):
+        """When popis mentions a weapon, agent should check zákon o zbraních."""
+        from pravni_kvalifikator.agents.special_law_checker import special_law_checker_node
+
+        state: QualificationState = {
+            "popis_skutku": (
+                "Muž na mě zaútočil nožem, vytáhl jsem nelegálně drženou pistoli a bránil se"
+            ),
+            "typ": "TC",
+            "qualification_id": 1,
+            "kvalifikace": [
+                {
+                    "paragraf": "§ 146 odst. 1 TZ",
+                    "nazev": "Ublížení na zdraví",
+                    "confidence": 0.8,
+                    "duvod_jistoty": "Zlomenina ruky",
+                }
+            ],
+            "okolnosti": {
+                "vylucujici_okolnosti": [
+                    {
+                        "paragraf": "§ 29",
+                        "nazev": "Nutná obrana",
+                        "aplikovatelnost": "ano",
+                        "vztahuje_se_na": ["§ 146"],
+                        "duvod": "Obrana proti útoku nožem",
+                        "confidence": 0.9,
+                    }
+                ],
+                "polehcujici": [],
+                "pritezujici": [],
+            },
+        }
+
+        mock_mcp = AsyncMock()
+        mock_mcp.search_laws.return_value = json.dumps(
+            [
+                {
+                    "law_id": 6,
+                    "nazev": "Zákon o zbraních a střelivu",
+                    "typ": "specialni",
+                    "distance": 0.1,
+                },
+            ]
+        )
+        mock_mcp.search_chapters.return_value = json.dumps(
+            [
+                {"chapter_id": 60, "hlava_nazev": "Přestupky", "distance": 0.2},
+            ]
+        )
+        mock_mcp.search_paragraphs.return_value = json.dumps(
+            [
+                {
+                    "paragraph_id": 600,
+                    "cislo": "58",
+                    "nazev": "Neoprávněné držení zbraně",
+                    "distance": 0.1,
+                },
+            ]
+        )
+        mock_mcp.get_paragraph_text.return_value = "Kdo bez povolení drží zbraň..."
+
+        mock_llm_result = MagicMock()
+        mock_llm_result.kvalifikace = [
+            MagicMock(
+                paragraf="§ 58 zákona 90/2024 Sb.",
+                nazev="Neoprávněné držení zbraně",
+                zakon="Zákon o zbraních a střelivu",
+                confidence=0.8,
+                duvod="Pachatel držel pistoli bez povolení",
+                chybejici_znaky=["potvrzení absence zbrojního průkazu"],
+            )
+        ]
+        mock_llm_result.kvalifikace[0].model_dump.return_value = {
+            "paragraf": "§ 58 zákona 90/2024 Sb.",
+            "nazev": "Neoprávněné držení zbraně",
+            "zakon": "Zákon o zbraních a střelivu",
+            "confidence": 0.8,
+            "duvod": "Pachatel držel pistoli bez povolení",
+            "chybejici_znaky": ["potvrzení absence zbrojního průkazu"],
+        }
+        mock_llm_result.notes = ["Nutná obrana nevylučuje přestupek neoprávněného držení zbraně"]
+
+        with (
+            patch(
+                "pravni_kvalifikator.agents.special_law_checker.get_mcp_client",
+                return_value=mock_mcp,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.special_law_checker.call_llm_structured",
+                new_callable=AsyncMock,
+                return_value=mock_llm_result,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.special_law_checker.log_agent_activity",
+                new_callable=AsyncMock,
+            ),
+        ):
+            result = await special_law_checker_node(state)
+
+        assert "special_law_kvalifikace" in result
+        assert len(result["special_law_kvalifikace"]) > 0
+        assert result["special_law_kvalifikace"][0]["zakon"] == "Zákon o zbraních a střelivu"
+        assert "special_law_notes" in result
+
+    @pytest.mark.asyncio
+    async def test_no_special_laws_when_irrelevant(self):
+        """For a simple theft, no special law should be flagged."""
+        from pravni_kvalifikator.agents.special_law_checker import special_law_checker_node
+
+        state: QualificationState = {
+            "popis_skutku": "Pachatel odcizil z obchodu zboží v hodnotě 5 000 Kč",
+            "typ": "TC",
+            "qualification_id": 2,
+            "kvalifikace": [
+                {
+                    "paragraf": "§ 205 odst. 1 písm. a) TZ",
+                    "nazev": "Krádež",
+                    "confidence": 0.85,
+                }
+            ],
+            "okolnosti": {
+                "vylucujici_okolnosti": [],
+                "polehcujici": [],
+                "pritezujici": [],
+            },
+        }
+
+        mock_mcp = AsyncMock()
+        mock_mcp.search_laws.return_value = "[]"
+
+        mock_llm_result = MagicMock()
+        mock_llm_result.kvalifikace = []
+        mock_llm_result.notes = []
+
+        with (
+            patch(
+                "pravni_kvalifikator.agents.special_law_checker.get_mcp_client",
+                return_value=mock_mcp,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.special_law_checker.call_llm_structured",
+                new_callable=AsyncMock,
+                return_value=mock_llm_result,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.special_law_checker.log_agent_activity",
+                new_callable=AsyncMock,
+            ),
+        ):
+            result = await special_law_checker_node(state)
+
+        assert result["special_law_kvalifikace"] == []
+        assert result["special_law_notes"] == []
+
+
 class TestOrchestrator:
     @pytest.mark.asyncio
     async def test_tc_pipeline_skips_law_identifier(self):
@@ -1023,6 +1189,11 @@ class TestOrchestrator:
             patch(
                 "pravni_kvalifikator.agents.orchestrator.reviewer_node",
                 side_effect=mock_reviewer,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.special_law_checker_node",
+                new_callable=AsyncMock,
+                return_value={"special_law_kvalifikace": [], "special_law_notes": []},
             ),
             patch(
                 "pravni_kvalifikator.agents.orchestrator.log_agent_activity",
@@ -1087,6 +1258,11 @@ class TestOrchestrator:
                 side_effect=mock_reviewer,
             ),
             patch(
+                "pravni_kvalifikator.agents.orchestrator.special_law_checker_node",
+                new_callable=AsyncMock,
+                return_value={"special_law_kvalifikace": [], "special_law_notes": []},
+            ),
+            patch(
                 "pravni_kvalifikator.agents.orchestrator.log_agent_activity",
                 new_callable=AsyncMock,
             ),
@@ -1135,6 +1311,11 @@ class TestOrchestrator:
                 side_effect=mock_reviewer,
             ),
             patch(
+                "pravni_kvalifikator.agents.orchestrator.special_law_checker_node",
+                new_callable=AsyncMock,
+                return_value={"special_law_kvalifikace": [], "special_law_notes": []},
+            ),
+            patch(
                 "pravni_kvalifikator.agents.orchestrator.log_agent_activity",
                 new_callable=AsyncMock,
             ),
@@ -1150,3 +1331,132 @@ class TestOrchestrator:
 
         assert "error" in result
         assert not reviewer_called, "reviewer should NOT be called after error"
+
+    @pytest.mark.asyncio
+    async def test_tc_pipeline_includes_special_law_checker(self):
+        """For TC, special_law_checker should run after qualifier and before reviewer."""
+        from pravni_kvalifikator.agents.orchestrator import create_workflow
+
+        special_law_called = False
+
+        async def mock_head_cls(state):
+            return {"candidate_chapters": []}
+
+        async def mock_para_sel(state):
+            return {"candidate_paragraphs": []}
+
+        async def mock_qualifier(state):
+            return {"kvalifikace": [], "skoda": {}, "okolnosti": {}}
+
+        async def mock_reviewer(state):
+            return {"final_kvalifikace": [], "review_notes": []}
+
+        async def mock_special_law(state):
+            nonlocal special_law_called
+            special_law_called = True
+            return {"special_law_kvalifikace": [], "special_law_notes": []}
+
+        with (
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.head_classifier_node",
+                side_effect=mock_head_cls,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.paragraph_selector_node",
+                side_effect=mock_para_sel,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.qualifier_node",
+                side_effect=mock_qualifier,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.reviewer_node",
+                side_effect=mock_reviewer,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.special_law_checker_node",
+                side_effect=mock_special_law,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.log_agent_activity",
+                new_callable=AsyncMock,
+            ),
+        ):
+            workflow = create_workflow()
+            await workflow.ainvoke(
+                {
+                    "popis_skutku": "Střelil na útočníka nelegální zbraní",
+                    "typ": "TC",
+                    "qualification_id": 1,
+                }
+            )
+
+        assert special_law_called, "special_law_checker should be called for TC"
+
+    @pytest.mark.asyncio
+    async def test_pr_pipeline_includes_special_law_checker(self):
+        """For PR, special_law_checker should also run after qualifier and before reviewer."""
+        from pravni_kvalifikator.agents.orchestrator import create_workflow
+
+        special_law_called = False
+
+        async def mock_law_id(state):
+            return {"identified_laws": [{"law_id": 5}]}
+
+        async def mock_head_cls(state):
+            return {"candidate_chapters": []}
+
+        async def mock_para_sel(state):
+            return {"candidate_paragraphs": []}
+
+        async def mock_qualifier(state):
+            return {"kvalifikace": [], "skoda": {}, "okolnosti": {}}
+
+        async def mock_reviewer(state):
+            return {"final_kvalifikace": [], "review_notes": []}
+
+        async def mock_special_law(state):
+            nonlocal special_law_called
+            special_law_called = True
+            return {"special_law_kvalifikace": [], "special_law_notes": []}
+
+        with (
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.law_identifier_node",
+                side_effect=mock_law_id,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.head_classifier_node",
+                side_effect=mock_head_cls,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.paragraph_selector_node",
+                side_effect=mock_para_sel,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.qualifier_node",
+                side_effect=mock_qualifier,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.reviewer_node",
+                side_effect=mock_reviewer,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.special_law_checker_node",
+                side_effect=mock_special_law,
+            ),
+            patch(
+                "pravni_kvalifikator.agents.orchestrator.log_agent_activity",
+                new_callable=AsyncMock,
+            ),
+        ):
+            workflow = create_workflow()
+            await workflow.ainvoke(
+                {
+                    "popis_skutku": "Řidič pod vlivem alkoholu srazil chodce",
+                    "typ": "PR",
+                    "qualification_id": 1,
+                }
+            )
+
+        assert special_law_called, "special_law_checker should be called for PR"

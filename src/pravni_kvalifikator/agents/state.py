@@ -29,5 +29,10 @@ class QualificationState(TypedDict, total=False):
     final_kvalifikace: list[dict]  # adjusted kvalifikace after review
     review_notes: list[str]  # reviewer notes (souběhy, missing qualifications)
 
+    # -- Agent 5: Special Law Checker --
+    # [{paragraf, nazev, zakon, confidence, duvod, chybejici_znaky}]
+    special_law_kvalifikace: list[dict]
+    special_law_notes: list[str]
+
     # -- Status --
     error: str | None

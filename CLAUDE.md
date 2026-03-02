@@ -12,7 +12,7 @@ Web Browser → FastAPI (:8000) → LangGraph Agents → MCP Client → MCP Serv
 
 Three main components:
 - **MCP Server** (`src/pravni_kvalifikator/mcp/`) — FastMCP server with 9 tools for law database access
-- **Agent Pipeline** (`src/pravni_kvalifikator/agents/`) — 5 LangGraph agents (law_identifier → head_classifier → paragraph_selector → qualifier → reviewer)
+- **Agent Pipeline** (`src/pravni_kvalifikator/agents/`) — 6 LangGraph agents (law_identifier → head_classifier → paragraph_selector → qualifier → special_law_checker → reviewer)
 - **Web App** (`src/pravni_kvalifikator/web/`) — FastAPI with Jinja2 templates and SSE streaming
 
 ## Tech Stack
@@ -101,7 +101,8 @@ src/pravni_kvalifikator/
 │   ├── head_classifier.py   # Agent 1
 │   ├── paragraph_selector.py # Agent 2
 │   ├── qualifier.py         # Agent 3
-│   └── reviewer.py          # Agent 4
+│   ├── special_law_checker.py # Agent 4 (special laws beyond TZ)
+│   └── reviewer.py          # Agent 5
 ├── web/           # FastAPI web application
 │   ├── main.py    # FastAPI app (create_app factory + lifespan)
 │   ├── routes.py  # HTTP + SSE endpoints

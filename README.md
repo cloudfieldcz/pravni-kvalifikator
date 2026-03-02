@@ -57,7 +57,7 @@ Web Browser → FastAPI (:8000) → LangGraph Agents → MCP Server (:8001) → 
 ```
 
 - **MCP Server**: FastMCP s 9 nástroji pro přístup k databázi zákonů
-- **Agent Pipeline**: 5 LangGraph agentů (identifikace → klasifikace → selekce → kvalifikace → review)
+- **Agent Pipeline**: 6 LangGraph agentů (identifikace → klasifikace → selekce → kvalifikace → kontrola speciálních zákonů → review)
 - **Web App**: FastAPI + Jinja2 + SSE streaming průběhu
 
 ## Autentizace

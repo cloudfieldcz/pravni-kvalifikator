@@ -74,6 +74,12 @@ def _patch_all_agents(mock_mcp, mock_call_llm):
     stack.enter_context(patch(f"{rev_base}.call_llm_structured", side_effect=mock_call_llm))
     stack.enter_context(patch(f"{rev_base}.get_llm", return_value=MagicMock()))
 
+    # special_law_checker (MCP + LLM)
+    slc_base = "pravni_kvalifikator.agents.special_law_checker"
+    stack.enter_context(patch(f"{slc_base}.get_mcp_client", return_value=mock_mcp))
+    stack.enter_context(patch(f"{slc_base}.call_llm_structured", side_effect=mock_call_llm))
+    stack.enter_context(patch(f"{slc_base}.get_llm", return_value=MagicMock()))
+
     # Activity logging — suppress DB/SSE side-effects
     stack.enter_context(
         patch(
@@ -192,8 +198,18 @@ class TestE2EPipeline:
         ]
         reviewer_result.review_notes = ["Kvalifikace je správná"]
 
+        special_law_result = MagicMock()
+        special_law_result.kvalifikace = []
+        special_law_result.notes = []
+
         llm_call_count = 0
-        llm_results = [head_cls_result, para_sel_result, qualifier_result, reviewer_result]
+        llm_results = [
+            head_cls_result,
+            para_sel_result,
+            qualifier_result,
+            reviewer_result,
+            special_law_result,
+        ]
 
         async def mock_call_llm(llm, messages, output_schema, **kwargs):
             nonlocal llm_call_count
@@ -223,6 +239,7 @@ class TestE2EPipeline:
         empty_result.okolnosti = MagicMock(model_dump=lambda: {})
         empty_result.final_kvalifikace = []
         empty_result.review_notes = []
+        empty_result.notes = []
 
         law_identifier_called = False
 
@@ -272,6 +289,7 @@ class TestE2EPipeline:
         empty_result.okolnosti = MagicMock(model_dump=lambda: {})
         empty_result.final_kvalifikace = []
         empty_result.review_notes = []
+        empty_result.notes = []
 
         call_count = 0
 
@@ -280,7 +298,7 @@ class TestE2EPipeline:
             call_count += 1
             if call_count == 1:
                 return law_id_result  # Agent 0
-            return empty_result  # Agents 1-4
+            return empty_result  # Agents 1-5
 
         with _patch_all_agents(mock_mcp, mock_call_llm):
             result = await run_qualification("Řidič překročil rychlost o 40 km/h v obci", "PR", 1)
@@ -321,6 +339,7 @@ class TestE2EPipeline:
         empty_result.okolnosti = MagicMock(model_dump=lambda: {})
         empty_result.final_kvalifikace = []
         empty_result.review_notes = ["Nepodařilo se kvalifikovat"]
+        empty_result.notes = []
 
         async def mock_call_llm(llm, messages, schema, **kwargs):
             return empty_result
@@ -349,6 +368,7 @@ def _make_empty_llm_result():
     result.okolnosti = MagicMock(model_dump=lambda: {})
     result.final_kvalifikace = []
     result.review_notes = []
+    result.notes = []
     return result
 
 

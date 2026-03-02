@@ -132,6 +132,10 @@ async def _run_pipeline(qualification_id: int, popis_skutku: str, typ: str):
                         "review_notes": result.get("review_notes", []),
                         "skoda": result.get("skoda", {}),
                         "okolnosti": result.get("okolnosti", {}),
+                        "special_law_kvalifikace": result.get(
+                            "special_law_kvalifikace", []
+                        ),
+                        "special_law_notes": result.get("special_law_notes", []),
                     },
                     ensure_ascii=False,
                 ),

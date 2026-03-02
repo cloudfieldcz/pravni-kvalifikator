@@ -38,10 +38,10 @@ LAW_REGISTRY: list[dict] = [
         "oblasti": ["dopravní přestupky", "silniční provoz"],
     },
     {
-        "sbirkove_cislo": "119/2002",
-        "nazev": "Zákon o střelných zbraních a střelivu",
+        "sbirkove_cislo": "90/2024",
+        "nazev": "Zákon o zbraních a střelivu",
         "typ": "specialni",
-        "oblasti": ["zbraně", "střelivo"],
+        "oblasti": ["zbraně", "střelivo", "munice"],
     },
     {
         "sbirkove_cislo": "167/1998",

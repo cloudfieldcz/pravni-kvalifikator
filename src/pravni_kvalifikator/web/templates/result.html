@@ -75,6 +75,40 @@
         </ul>
         {% endif %}
 
+        {% if vysledek.special_law_kvalifikace %}
+        <h3>Porušení speciálních zákonů</h3>
+        <table class="kvalifikace-table special-law-table">
+            <thead>
+                <tr>
+                    <th>Paragraf</th>
+                    <th>Název</th>
+                    <th>Zákon</th>
+                    <th>Confidence</th>
+                    <th>Odůvodnění</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for kv in vysledek.special_law_kvalifikace %}
+                <tr>
+                    <td class="paragraf">{{ kv.paragraf }}</td>
+                    <td>{{ kv.nazev }}</td>
+                    <td>{{ kv.zakon }}</td>
+                    <td class="confidence">{{ (kv.confidence * 100)|round|int }}%</td>
+                    <td>{{ kv.duvod }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% endif %}
+
+        {% if vysledek.special_law_notes %}
+        <ul class="review-notes special-law-notes">
+            {% for note in vysledek.special_law_notes %}
+            <li>{{ note }}</li>
+            {% endfor %}
+        </ul>
+        {% endif %}
+
         {# Okolnosti section #}
         {% if vysledek.okolnosti %}
             {% if 'vylucujici_okolnosti' in vysledek.okolnosti %}
